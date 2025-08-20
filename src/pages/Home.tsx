@@ -1,330 +1,775 @@
-// src/pages/Home.tsx
-import React from 'react';
-import { Link } from 'react-router-dom';
-import {
-  Dice6,
-  Trophy,
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Users, 
+  Settings, 
+  TrendingUp, 
+  DollarSign, 
   Shield,
-  Zap,
-  Target,
-  Coins,
+  Edit,
+  Save,
+  X,
+  Plus,
+  Trash2,
+  Bug,
+  AlertCircle,
+  CheckCircle,
   Clock,
-  TrendingUp,
+  User,
+  ChevronDown,
+  ChevronUp,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const Home: React.FC = () => {
+const AdminPanel: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [users, setUsers] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({});
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<any>({});
+  const [botNames, setBotNames] = useState<string[]>([]);
+  const [newBotName, setNewBotName] = useState('');
+  const [bugReports, setBugReports] = useState<any[]>([]);
+  const [bugFilters, setBugFilters] = useState({ status: '', priority: '' });
+  const [expandedUserStats, setExpandedUserStats] = useState<string | null>(null);
+  const [userStats, setUserStats] = useState<{[key: string]: any}>({});
 
-  const mainBal = user ? Number((user.cashBalance ?? 0) + (user.bonusBalance ?? 0) + (user.lockedBalance ?? 0)) : 0;
-  const vBal = user ? Number(user.virtualBalance ?? 0) : 0;
+  useEffect(() => {
+    if (!user?.isAdmin) {
+      navigate('/');
+      return;
+    }
+    
+    fetchUsers();
+    fetchStats();
+    fetchBotNames();
+    fetchBugReports();
+  }, [user, navigate]);
 
-  const getRandomGame = () => {
-    const games = ['BarboDice', 'DiceBattle'];
-    return games[Math.floor(Math.random() * games.length)];
+  const fetchUserStats = async (userId: string) => {
+    if (userStats[userId]) {
+      // Already fetched, just toggle
+      setExpandedUserStats(expandedUserStats === userId ? null : userId);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/stats`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUserStats(prev => ({ ...prev, [userId]: data }));
+        setExpandedUserStats(userId);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user stats:', error);
+    }
   };
 
-  const getRandomGamePath = () => {
-    const paths = ['/dice', '/dicebattle'];
-    return paths[Math.floor(Math.random() * paths.length)];
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users);
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
   };
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/admin/stats', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
+  };
+
+  const fetchBotNames = async () => {
+    try {
+      const response = await fetch('/api/admin/bot-names', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setBotNames(data.botNames);
+      }
+    } catch (error) {
+      console.error('Failed to fetch bot names:', error);
+    }
+  };
+
+  const fetchBugReports = async () => {
+    try {
+      const response = await fetch('/api/admin/bug-reports', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setBugReports(data.bugReports || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch bug reports:', error);
+    }
+  };
+
+  const updateUserSettings = async (userId: string, settings: any) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(settings)
+      });
+      
+      if (response.ok) {
+        fetchUsers();
+        setEditingUser(null);
+      }
+    } catch (error) {
+      console.error('Failed to update user settings:', error);
+    }
+  };
+
+  const updateCommissionRate = async (userId: string, commission: number) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/commission`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ commission })
+      });
+      
+      if (response.ok) {
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Failed to update commission rate:', error);
+    }
+  };
+
+  const addBonus = async (userId: string, amount: number) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/bonus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ amount })
+      });
+      
+      if (response.ok) {
+        fetchUsers();
+        alert('Bonus added successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to add bonus:', error);
+    }
+  };
+
+  const addBotName = async () => {
+    if (!newBotName.trim()) return;
+
+    
+    try {
+      const response = await fetch('/api/admin/bot-names', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: newBotName.trim() })
+      });
+      
+      if (response.ok) {
+        fetchBotNames();
+        setNewBotName('');
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
+    } catch (error) {
+      console.error('Failed to add bot name:', error);
+    }
+  };
+
+  const removeBotName = async (name: string) => {
+    try {
+      const response = await fetch('/api/admin/bot-names', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name })
+      });
+      
+      if (response.ok) {
+        fetchBotNames();
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
+    } catch (error) {
+      console.error('Failed to remove bot name:', error);
+    }
+  };
+
+  const updateBugReportStatus = async (reportId: string, status: string, priority?: string) => {
+    try {
+      const body: any = { status };
+      if (priority) body.priority = priority;
+      
+      const response = await fetch(`/api/admin/bug-reports/${reportId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+      });
+      
+      if (response.ok) {
+        fetchBugReports();
+      }
+    } catch (error) {
+      console.error('Failed to update bug report:', error);
+    }
+  };
+
+  const startEdit = (userId: string, currentValues: any) => {
+    setEditingUser(userId);
+    setEditValues(currentValues);
+  };
+
+  const saveEdit = () => {
+    if (editingUser) {
+      updateUserSettings(editingUser, editValues);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingUser(null);
+    setEditValues({});
+  };
+
+  if (!user?.isAdmin) {
+    return <div>Access denied</div>;
+  }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Hero Section */}
-      <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-6xl font-bold mb-6">
-          Welcome to{' '}
-          <span className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent">
-            DiceSino
-          </span>
-        </h1>
-        <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-          Experience the thrill of provably fair dice games. Roll, win, and cash out in our premium gambling platform.
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="flex items-center space-x-3 mb-8">
+          <Shield className="h-8 w-8 text-red-500" />
+          <h1 className="text-3xl font-bold">Admin Panel</h1>
+        </div>
 
-        {user ? (
-          <div className="space-y-4">
-            <Link
-              to={getRandomGamePath()}
-              className="inline-block bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105"
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 mb-8 bg-white/10 p-1 rounded-lg">
+          {[
+            { id: 'overview', label: 'Overview', icon: TrendingUp },
+            { id: 'users', label: 'Users', icon: Users },
+            { id: 'bots', label: 'Bot Names', icon: Settings },
+            { id: 'bugs', label: 'Bug Reports', icon: Bug }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                activeTab === tab.id
+                  ? 'bg-white/20 text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-white/10'
+              }`}
             >
-              Play {getRandomGame()}
-            </Link>
-            <div className="flex justify-center items-center space-x-8 text-sm">
-              <div className="text-center">
-                <div className="text-yellow-400 font-bold text-lg">${mainBal.toFixed(2)}</div>
-                <div className="text-gray-400">Main Balance</div>
+              <tab.icon className="h-4 w-4" />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+              <div className="flex items-center space-x-3 mb-2">
+                <Users className="h-6 w-6 text-blue-400" />
+                <h3 className="font-bold">Total Users</h3>
               </div>
-              <div className="text-center">
-                <div className="text-purple-400 font-bold text-lg">${vBal.toFixed(2)}</div>
-                <div className="text-gray-400">Virtual (Demo)</div>
-              </div>
+              <div className="text-2xl font-bold">{stats.totalUsers || 0}</div>
             </div>
-          </div>
-        ) : (
-          <div className="space-x-4">
-            <Link
-              to="/register"
-              className="inline-block bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105"
-            >
-              Get Started
-            </Link>
-            <Link
-              to="/login"
-              className="inline-block border border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black font-bold text-lg px-8 py-4 rounded-xl transition-all"
-            >
-              Login
-            </Link>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+              <div className="flex items-center space-x-3 mb-2">
+                <TrendingUp className="h-6 w-6 text-green-400" />
+                <h3 className="font-bold">Total Games</h3>
+              </div>
+              <div className="text-2xl font-bold">{stats.totalGames || 0}</div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+              <div className="flex items-center space-x-3 mb-2">
+                <DollarSign className="h-6 w-6 text-yellow-400" />
+                <h3 className="font-bold">Total Deposited</h3>
+              </div>
+              <div className="text-2xl font-bold">${(stats.totalRealMoneyDeposited || 0).toFixed(2)}</div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+              <div className="flex items-center space-x-3 mb-2">
+                <TrendingUp className="h-6 w-6 text-purple-400" />
+                <h3 className="font-bold">Casino Profit</h3>
+              </div>
+              <div className="text-2xl font-bold">${(stats.totalCasinoProfit || 0).toFixed(2)}</div>
+            </div>
           </div>
         )}
-      </div>
 
-      {/* Features */}
-      <div className="grid md:grid-cols-3 gap-8 mb-16">
-        <div className="text-center p-6 bg-white/5 rounded-xl border border-white/10">
-          <Shield className="h-12 w-12 text-green-400 mx-auto mb-4" />
-          <h3 className="text-xl font-bold mb-2">Provably Fair</h3>
-          <p className="text-gray-400">Every roll is verifiable and transparent using cryptographic hashes</p>
-        </div>
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+            <h2 className="text-2xl font-bold mb-6">User Management</h2>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/20">
+                    <th className="text-left p-3">User</th>
+                    <th className="text-left p-3">Balances</th>
+                    <th className="text-left p-3">House Edge</th>
+                    <th className="text-left p-3">Limits</th>
+                    <th className="text-left p-3">Affiliate</th>
+                    <th className="text-left p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(user => (
+                    <React.Fragment key={user.id}>
+                      <tr className="border-b border-white/10">
+                      <td className="p-3">
+                        <div>
+                          <div className="font-medium">{user.email}</div>
+                          <div className="text-gray-400 text-xs">@{user.username}</div>
+                          <div className="text-gray-500 text-xs">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="text-xs space-y-1">
+                          <div>💰 ${(user.cashBalance || 0).toFixed(2)}</div>
+                          <div>🎁 ${(user.bonusBalance || 0).toFixed(2)}</div>
+                          <div>🔒 ${(user.lockedBalance || 0).toFixed(2)}</div>
+                          <div>🎮 ${(user.virtualBalance || 0).toFixed(2)}</div>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        {editingUser === user.id ? (
+                          <div className="space-y-2">
+                            <input
+                              type="number"
+                              min="0"
+                              max="50"
+                              step="0.1"
+                              value={editValues.diceGameEdge || 0}
+                              onChange={(e) => setEditValues({...editValues, diceGameEdge: parseFloat(e.target.value)})}
+                              className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs"
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              max="50"
+                              step="0.1"
+                              value={editValues.diceBattleEdge || 0}
+                              onChange={(e) => setEditValues({...editValues, diceBattleEdge: parseFloat(e.target.value)})}
+                              className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs"
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-xs space-y-1">
+                            <div>Dice: {user.diceGameEdge}%</div>
+                            <div>Battle: {user.diceBattleEdge}%</div>
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {editingUser === user.id ? (
+                          <div className="space-y-2">
+                            <input
+                              type="number"
+                              min="1"
+                              max="1000"
+                              value={editValues.maxBetWhileBonus || 0}
+                              onChange={(e) => setEditValues({...editValues, maxBetWhileBonus: parseFloat(e.target.value)})}
+                              className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs"
+                            />
+                            <input
+                              type="number"
+                              min="100"
+                              max="10000"
+                              value={editValues.maxBonusCashout || 0}
+                              onChange={(e) => setEditValues({...editValues, maxBonusCashout: parseFloat(e.target.value)})}
+                              className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs"
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-xs space-y-1">
+                            <div>Max Bet: ${user.maxBetWhileBonus}</div>
+                            <div>Max Cashout: ${user.maxBonusCashout}</div>
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <div className="text-xs space-y-1">
+                          <div className={user.isAffiliate ? 'text-green-400' : 'text-gray-500'}>
+                            {user.isAffiliate ? 'Active' : 'Inactive'}
+                          </div>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={user.affiliateCommission || 0}
+                            onChange={(e) => updateCommissionRate(user.id, parseFloat(e.target.value))}
+                            className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs"
+                          />
+                          <div className="text-gray-400">%</div>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex space-x-1">
+                          {editingUser === user.id ? (
+                            <>
+                              <button
+                                onClick={saveEdit}
+                                className="p-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded"
+                              >
+                                <Save className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={cancelEdit}
+                                className="p-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => startEdit(user.id, {
+                                diceGameEdge: user.diceGameEdge,
+                                diceBattleEdge: user.diceBattleEdge,
+                                maxBetWhileBonus: user.maxBetWhileBonus,
+                                maxBonusCashout: user.maxBonusCashout
+                              })}
+                              className="p-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              const amount = prompt('Enter bonus amount:');
+                              if (amount && parseFloat(amount) > 0) {
+                                addBonus(user.id, parseFloat(amount));
+                              }
+                            }}
+                            className="p-1 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 rounded"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => fetchUserStats(user.id)}
+                            className="p-1 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded"
+                            title="View Statistics"
+                          >
+                            {expandedUserStats === user.id ? <ChevronUp className="h-3 w-3" /> : <BarChart3 className="h-3 w-3" />}
+                          </button>
+                        </div>
+                      </td>
+                      </tr>
+                      {expandedUserStats === user.id && userStats[user.id] && (
+                        <tr>
+                          <td colSpan={6} className="p-0">
+                            <div className="bg-black/20 border-t border-white/10 p-4">
+                              <div className="grid md:grid-cols-3 gap-4">
+                                {/* Real Money Stats */}
+                                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                                  <h4 className="font-bold text-green-400 mb-2">💰 Real Money</h4>
+                                  <div className="text-xs space-y-1">
+                                    <div className="flex justify-between">
+                                      <span>Deposited:</span>
+                                      <span className="font-bold">${(userStats[user.id].realMoney?.totalDeposited || 0).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Withdrawn:</span>
+                                      <span className="font-bold">${(userStats[user.id].realMoney?.totalWithdrawn || 0).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Casino Profit:</span>
+                                      <span className={`font-bold ${(userStats[user.id].realMoney?.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                        ${(userStats[user.id].realMoney?.casinoProfit || 0).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
 
-        <div className="text-center p-6 bg-white/5 rounded-xl border border-white/10">
-          <Zap className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-          <h3 className="text-xl font-bold mb-2">Instant Payouts</h3>
-          <p className="text-gray-400">Cash out anytime during your winning streak</p>
-        </div>
+                                {/* Game Stats */}
+                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                                  <h4 className="font-bold text-blue-400 mb-2">🎮 Game Stats (Real)</h4>
+                                  <div className="text-xs space-y-1">
+                                    <div>
+                                      <div className="font-medium">BarboDice:</div>
+                                      <div className="ml-2">
+                                        <div>Games: {userStats[user.id].realStats?.barboDice?.totalGames || 0}</div>
+                                        <div>Wins: {userStats[user.id].realStats?.barboDice?.wins || 0}</div>
+                                        <div>Total Bet: ${(userStats[user.id].realStats?.barboDice?.totalBets || 0).toFixed(2)}</div>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="font-medium">DiceBattle:</div>
+                                      <div className="ml-2">
+                                        <div>Games: {userStats[user.id].realStats?.diceBattle?.totalGames || 0}</div>
+                                        <div>Wins: {userStats[user.id].realStats?.diceBattle?.wins || 0}</div>
+                                        <div>Total Bet: ${(userStats[user.id].realStats?.diceBattle?.totalBets || 0).toFixed(2)}</div>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="font-medium">DiceRoulette:</div>
+                                      <div className="ml-2">
+                                        <div>Games: {userStats[user.id].realStats?.diceRoulette?.totalGames || 0}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
 
-        <div className="text-center p-6 bg-white/5 rounded-xl border border-white/10">
-          <Trophy className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-          <h3 className="text-xl font-bold mb-2">Big Multipliers</h3>
-          <p className="text-gray-400">Win up to ~2.2x per scoring roll (configurable)</p>
-        </div>
-      </div>
+                                {/* Wagering Progress */}
+                                <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+                                  <h4 className="font-bold text-orange-400 mb-2">🔄 Wagering</h4>
+                                  <div className="text-xs space-y-2">
+                                    <div className="flex justify-between">
+                                      <span>Required:</span>
+                                      <span className="font-bold">${(userStats[user.id].wagering?.required || 0).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Progress:</span>
+                                      <span className="font-bold">${(userStats[user.id].wagering?.progress || 0).toFixed(2)}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-700 rounded-full h-2">
+                                      <div 
+                                        className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                                        style={{ width: `${userStats[user.id].wagering?.progressPercent || 0}%` }}
+                                      ></div>
+                                    </div>
+                                    <div className="text-center text-orange-400 font-bold">
+                                      {userStats[user.id].wagering?.progressPercent || 0}%
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
 
-      {/* Games Section */}
-      <div className="mb-16">
-        <h2 className="text-3xl font-bold text-center mb-8">Casino Games</h2>
+                              {/* Affiliate Stats */}
+                              {userStats[user.id].affiliateStats && (
+                                <div className="mt-4 bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                                  <h4 className="font-bold text-purple-400 mb-2">👥 Affiliate Stats</h4>
+                                  <div className="grid grid-cols-3 gap-4 text-xs">
+                                    <div className="text-center">
+                                      <div className="font-bold text-lg">{userStats[user.id].affiliateStats.totalReferrals}</div>
+                                      <div className="text-gray-400">Total Referrals</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="font-bold text-lg">{userStats[user.id].affiliateStats.activeReferrals}</div>
+                                      <div className="text-gray-400">Active Referrals</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="font-bold text-lg text-green-400">${(userStats[user.id].affiliateStats.totalCommissionEarned || 0).toFixed(2)}</div>
+                                      <div className="text-gray-400">Commission Earned</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* BarboDice */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:border-yellow-500/50 transition-all transform hover:scale-105">
-            <div className="text-center">
-              <div className="flex justify-center space-x-2 mb-4">
-                <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-                  <Dice6 className="h-6 w-6 text-black" />
-                </div>
-                <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-                  <Dice6 className="h-6 w-6 text-black" />
-                </div>
-                <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-                  <Dice6 className="h-6 w-6 text-black" />
-                </div>
+                              {/* Recent Transactions */}
+                              {userStats[user.id].transactions && userStats[user.id].transactions.length > 0 && (
+                                <div className="mt-4 bg-gray-500/10 border border-gray-500/20 rounded-lg p-3">
+                                  <h4 className="font-bold text-gray-400 mb-2">📋 Recent Transactions</h4>
+                                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                                    {userStats[user.id].transactions.map((tx: any, index: number) => (
+                                      <div key={index} className="flex justify-between items-center text-xs">
+                                        <span>{tx.type.replace('_', ' ')}</span>
+                                        <span className={tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                          ${Math.abs(tx.amount).toFixed(2)}
+                                        </span>
+                                        <span className="text-gray-500">
+                                          {new Date(tx.createdAt).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Bot Names Tab */}
+        {activeTab === 'bots' && (
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+            <h2 className="text-2xl font-bold mb-6">DiceBattle Bot Names</h2>
+            
+            <div className="mb-6">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={newBotName}
+                  onChange={(e) => setNewBotName(e.target.value)}
+                  placeholder="Enter new bot name"
+                  className="flex-1 px-4 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                  maxLength={20}
+                />
+                <button
+                  onClick={addBotName}
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-4 py-2 rounded-lg transition-all"
+                >
+                  Add Bot
+                </button>
               </div>
-              <h3 className="text-xl font-bold mb-2">BarboDice</h3>
-              <p className="text-gray-400 text-sm mb-4">
-                Roll for singles, straights, and triples. Multiply your pot up to ~2.2x!
+              <p className="text-xs text-gray-400 mt-2">
+                Bot names are used for DiceBattle opponents. Maximum 20 characters.
               </p>
-              <div className="flex justify-center space-x-2 mb-4">
-                <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">Live</span>
-                <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded">Provably Fair</span>
-              </div>
-              {user ? (
-                <Link
-                  to="/dice"
-                  className="block bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold py-2 px-4 rounded-lg transition-all"
-                >
-                  Play Now
-                </Link>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {botNames.map((name, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-black/30 rounded-lg">
+                  <span className="font-medium">{name}</span>
+                  <button
+                    onClick={() => {
+                      if (confirm(`Remove bot name "${name}"?`)) {
+                        removeBotName(name);
+                      }
+                    }}
+                    className="p-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded transition-colors"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-4 text-sm text-gray-400">
+              Total bot names: {botNames.length} (Minimum 5 required)
+            </div>
+          </div>
+        )}
+
+        {/* Bug Reports Tab */}
+        {activeTab === 'bugs' && (
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Bug Reports</h2>
+              <button
+                onClick={fetchBugReports}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold px-4 py-2 rounded-lg transition-all"
+              >
+                Fetch Bug Reports
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {bugReports.length > 0 ? (
+                bugReports.map((report) => (
+                  <div key={report.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="font-bold text-lg">{report.subject}</h3>
+                          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            report.priority === 'critical' ? 'bg-red-500/20 text-red-400' :
+                            report.priority === 'high' ? 'bg-orange-500/20 text-orange-400' :
+                            report.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {report.priority}
+                          </div>
+                          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            report.status === 'open' ? 'bg-blue-500/20 text-blue-400' :
+                            report.status === 'in_progress' ? 'bg-yellow-500/20 text-yellow-400' :
+                            report.status === 'resolved' ? 'bg-green-500/20 text-green-400' :
+                            'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {report.status.replace('_', ' ')}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4 text-sm text-gray-400 mb-3">
+                          <div className="flex items-center space-x-1">
+                            <User className="h-4 w-4" />
+                            <span>
+                              {report.email || 'Anonymous User'}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Clock className="h-4 w-4" />
+                            <span>{new Date(report.createdAt).toLocaleString()}</span>
+                          </div>
+                        </div>
+                        
+                        <p className="text-gray-300 mb-4">{report.message}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <select
+                        value={report.status}
+                        onChange={(e) => updateBugReportStatus(report.id, e.target.value, report.priority)}
+                        className="px-3 py-1 bg-black/30 border border-white/20 rounded text-sm"
+                      >
+                        <option value="open">Open</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                      
+                      <select
+                        value={report.priority}
+                        onChange={(e) => updateBugReportStatus(report.id, report.status, e.target.value)}
+                        className="px-3 py-1 bg-black/30 border border-white/20 rounded text-sm"
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    </div>
+                  </div>
+                ))
               ) : (
-                <Link
-                  to="/register"
-                  className="block bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold py-2 px-4 rounded-lg transition-all"
-                >
-                  Register to Play
-                </Link>
+                <div className="text-center text-gray-400 py-8">
+                  <Bug className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No bug reports found</p>
+                  <p className="text-sm">Reports will appear here when users submit them</p>
+                </div>
               )}
             </div>
           </div>
-
-          {/* Dice Roulette */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:border-orange-500/50 transition-all transform hover:scale-105">
-            <div className="text-center">
-              <div className="flex justify-center space-x-2 mb-4">
-                <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <Target className="h-6 w-6 text-white" />
-                </div>
-                <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <Dice6 className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Dice Roulette</h3>
-              <p className="text-gray-400 text-sm mb-4">
-                Bet on dice outcomes with multiple betting options and big payouts!
-              </p>
-              <div className="flex justify-center space-x-2 mb-4">
-                <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">Live</span>
-                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Multi-Bet</span>
-              </div>
-              {user ? (
-                <Link
-                  to="/diceroulette"
-                  className="block bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-2 px-4 rounded-lg transition-all"
-                >
-                  Play Now
-                </Link>
-              ) : (
-                <Link
-                  to="/register"
-                  className="block bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-2 px-4 rounded-lg transition-all"
-                >
-                  Register to Play
-                </Link>
-              )}
-            </div>
-          </div>
-
-          {/* DiceBattle */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:border-red-500/50 transition-all transform hover:scale-105">
-            <div className="text-center">
-              <div className="flex justify-center space-x-2 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center">
-                  <Dice6 className="h-6 w-6 text-white" />
-                </div>
-                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mt-2">
-                  <span className="text-black font-bold text-sm">VS</span>
-                </div>
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <Dice6 className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2">DiceBattle</h3>
-              <p className="text-gray-400 text-sm mb-4">
-                Challenge opponents in dice prediction battles. Closest guess wins!
-              </p>
-              <div className="flex justify-center space-x-2 mb-4">
-                <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">Live</span>
-                <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">PvP</span>
-              </div>
-              {user ? (
-                <Link
-                  to="/dicebattle"
-                  className="block bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-2 px-4 rounded-lg transition-all"
-                >
-                  Battle Now
-                </Link>
-              ) : (
-                <Link
-                  to="/register"
-                  className="block bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-2 px-4 rounded-lg transition-all"
-                >
-                  Register to Battle
-                </Link>
-              )}
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Featured Game Details */}
-      <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-8 mb-16">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-4">Featured: BarboDice</h2>
-          <div className="flex justify-center space-x-4 mb-6">
-            <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-lg">
-              <Dice6 className="h-8 w-8 text-black" />
-            </div>
-            <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-lg">
-              <Dice6 className="h-8 w-8 text-black" />
-            </div>
-            <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-lg">
-              <Dice6 className="h-8 w-8 text-black" />
-            </div>
-          </div>
-          <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-            Roll three dice and score points with singles (1s &amp; 5s), straights, or triples.
-            Each winning roll multiplies your pot - cash out anytime or risk it all!
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Scoring Rules */}
-          <div className="bg-black/30 rounded-xl p-6">
-            <h4 className="text-lg font-bold mb-4 text-center">Scoring Rules</h4>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span>Each 1:</span>
-                <span className="text-green-400 font-bold">100 pts</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Each 5:</span>
-                <span className="text-green-400 font-bold">50 pts</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Straight (1-2-3, 2-3-4, 1-3-5, 2-4-6):</span>
-                <span className="text-yellow-400 font-bold">100 pts</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Triple (n-n-n):</span>
-                <span className="text-purple-400 font-bold">n × 100 pts</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Multiplier Table */}
-          <div className="bg-black/30 rounded-xl p-6">
-            <h4 className="text-lg font-bold mb-4 text-center">Multipliers</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="flex justify-between">
-                <span>50pts:</span><span className="text-green-400">1.1x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>100pts:</span><span className="text-green-400">1.2x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>150pts:</span><span className="text-yellow-400">1.3x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>200pts:</span><span className="text-yellow-400">1.4x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>250pts:</span><span className="text-orange-400">1.6x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>300pts:</span><span className="text-orange-400">1.8x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>400pts:</span><span className="text-red-400">2.0x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>500pts:</span><span className="text-red-400">2.1x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>600pts:</span><span className="text-purple-400">2.2x</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Coming Soon */}
-      <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/20 p-8 text-center">
-        <div className="flex items-center justify-center space-x-3 mb-6">
-          <Clock className="h-8 w-8 text-purple-400" />
-          <h2 className="text-3xl font-bold">More Games Coming Soon</h2>
-        </div>
-        <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-          We&apos;re constantly expanding our casino with new exciting games. Stay tuned for blackjack, poker, roulette, slots, and more!
-        </p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <span className="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-full text-sm">Live Dealer Games</span>
-          <span className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-full text-sm">Tournament Mode</span>
-          <span className="px-4 py-2 bg-green-500/20 text-green-400 rounded-full text-sm">Progressive Jackpots</span>
-          <span className="px-4 py-2 bg-yellow-500/20 text-yellow-400 rounded-full text-sm">VIP Rewards</span>
-        </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default Home;
+export default AdminPanel;
