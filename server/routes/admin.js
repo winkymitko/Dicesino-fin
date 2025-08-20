@@ -34,7 +34,7 @@ let botNames = [...DEFAULT_BOT_NAMES];
 // Submit bug report
 router.post('/bug-reports', async (req, res) => {
   try {
-    const { subject, description } = req.body;
+    const { subject, description, userEmail } = req.body;
     
     if (!subject || !description) {
       return res.status(400).json({ error: 'Subject and description are required' });
@@ -42,15 +42,16 @@ router.post('/bug-reports', async (req, res) => {
     
     const bugReport = await prisma.bugReport.create({
       data: {
-        user_id: req.user?.id || null,
-        user_email: req.user?.email || null,
+        userId: req.user?.id || null,
+        userEmail: userEmail || req.user?.email || null,
         subject: subject.trim(),
-        description: description.trim(),
-        priority: 'medium' // Default priority set by system
+        message: description.trim(),
+        status: 'open',
+        priority: 'medium'
       }
     });
     
-    res.json({ success: true, report_id: bugReport.id });
+    res.json({ success: true, reportId: bugReport.id });
   } catch (error) {
     console.error('Bug report submission error:', error);
     res.status(500).json({ error: 'Failed to submit bug report' });
@@ -61,10 +62,10 @@ router.post('/bug-reports', async (req, res) => {
 router.get('/bug-reports', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const bugReports = await prisma.bugReport.findMany({
-      orderBy: { created_at: 'desc' }
+      orderBy: { createdAt: 'desc' }
     });
     
-    res.json({ bug_reports: bugReports });
+    res.json({ bugReports });
   } catch (error) {
     console.error('Failed to fetch bug reports:', error);
     res.status(500).json({ error: 'Server error' });
@@ -72,17 +73,17 @@ router.get('/bug-reports', authenticateToken, requireAdmin, async (req, res) => 
 });
 
 // Update bug report (admin only)
-router.put('/bug-reports/:report_id', authenticateToken, requireAdmin, async (req, res) => {
+router.put('/bug-reports/:reportId', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { report_id } = req.params;
+    const { reportId } = req.params;
     const { status, priority } = req.body;
     
-    const updateData = { updated_at: new Date() };
+    const updateData = { updatedAt: new Date() };
     if (status) updateData.status = status;
     if (priority) updateData.priority = priority;
     
     await prisma.bugReport.update({
-      where: { id: report_id },
+      where: { id: reportId },
       data: updateData
     });
     

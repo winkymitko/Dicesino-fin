@@ -93,7 +93,7 @@ const AdminPanel: React.FC = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setBugReports(data.bug_reports || []);
+        setBugReports(data.bugReports || []);
       }
     } catch (error) {
       console.error('Failed to fetch bug reports:', error);
@@ -558,16 +558,16 @@ const AdminPanel: React.FC = () => {
                         <div className="flex items-center space-x-1">
                           <User className="h-4 w-4" />
                           <span>
-                            {report.user_email || 'Anonymous User'}
+                            {report.userEmail || 'Anonymous User'}
                           </span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Clock className="h-4 w-4" />
-                          <span>{new Date(report.created_at).toLocaleString()}</span>
+                          <span>{new Date(report.createdAt).toLocaleString()}</span>
                         </div>
                       </div>
                       
-                      <p className="text-gray-300 mb-4">{report.description}</p>
+                      <p className="text-gray-300 mb-4">{report.message}</p>
                     </div>
                   </div>
                   
