@@ -181,6 +181,7 @@ const AdminPanel: React.FC = () => {
 
   const addBotName = async () => {
     if (!newBotName.trim()) return;
+
     
     try {
       const response = await fetch('/api/admin/bot-names', {
