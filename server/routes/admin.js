@@ -43,7 +43,7 @@ router.post('/bug-reports', async (req, res) => {
     const bugReport = await prisma.bugReport.create({
       data: {
         userId: req.user?.id || null,
-        userEmail: userEmail || req.user?.email || null,
+        email: userEmail || req.user?.email || null,
         subject: subject.trim(),
         message: description.trim(),
         status: 'open',
