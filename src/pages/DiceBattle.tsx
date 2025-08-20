@@ -401,7 +401,7 @@ const DiceBattle: React.FC = () => {
         )}
 
         {/* Game Rules */}
-        <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6">
+        <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 custom-scrollbar">
           <h3 className="text-xl font-bold mb-4 text-center text-white">How to Play DiceBattle</h3>
           
           <div className="grid md:grid-cols-2 gap-6">
