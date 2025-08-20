@@ -349,7 +349,8 @@ const AdminPanel: React.FC = () => {
               </thead>
               <tbody>
                 {users.map(user => (
-                  <tr key={user.id} className="border-b border-white/10">
+                  <React.Fragment key={user.id}>
+                    <tr className="border-b border-white/10">
                     <td className="p-3">
                       <div>
                         <div className="font-medium">{user.email}</div>
@@ -490,121 +491,126 @@ const AdminPanel: React.FC = () => {
                         </button>
                       </div>
                     </td>
-                  </tr>
-                  {expandedUserStats === user.id && userStats[user.id] && (
-                    <tr>
-                      <td colSpan={6} className="p-0">
-                        <div className="bg-black/20 border-t border-white/10 p-4">
-                          <div className="grid md:grid-cols-3 gap-4">
-                            {/* Real Money Stats */}
-                            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-                              <h4 className="font-bold text-green-400 mb-2">💰 Real Money</h4>
-                              <div className="text-xs space-y-1">
-                                <div className="flex justify-between">
-                                  <span>Deposited:</span>
-                                  <span className="font-bold">${(userStats[user.id].realMoney?.totalDeposited || 0).toFixed(2)}</span>
+                    </tr>
+                    {expandedUserStats === user.id && userStats[user.id] && (
+                      <tr>
+                        <td colSpan={6} className="p-0">
+                          <div className="bg-black/20 border-t border-white/10 p-4">
+                            <div className="grid md:grid-cols-3 gap-4">
+                              {/* Real Money Stats */}
+                              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                                <h4 className="font-bold text-green-400 mb-2">💰 Real Money</h4>
+                                <div className="text-xs space-y-1">
+                                  <div className="flex justify-between">
+                                    <span>Deposited:</span>
+                                    <span className="font-bold">${(userStats[user.id].realMoney?.totalDeposited || 0).toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Withdrawn:</span>
+                                    <span className="font-bold">${(userStats[user.id].realMoney?.totalWithdrawn || 0).toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Casino Profit:</span>
+                                    <span className={`font-bold ${(userStats[user.id].realMoney?.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                      ${(userStats[user.id].realMoney?.casinoProfit || 0).toFixed(2)}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="flex justify-between">
-                                  <span>Withdrawn:</span>
-                                  <span className="font-bold">${(userStats[user.id].realMoney?.totalWithdrawn || 0).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Casino Profit:</span>
-                                  <span className={`font-bold ${(userStats[user.id].realMoney?.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                    ${(userStats[user.id].realMoney?.casinoProfit || 0).toFixed(2)}
-                                  </span>
+                              </div>
+
+                              {/* Game Stats */}
+                              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                                <h4 className="font-bold text-blue-400 mb-2">🎮 Game Stats (Real)</h4>
+                                <div className="text-xs space-y-1">
+                                  <div>
+                                    <div className="font-medium">BarboDice:</div>
+                                    <div className="ml-2">
+                                      <div>Games: {userStats[user.id].realStats?.barboDice?.totalGames || 0}</div>
+                                      <div>Wins: {userStats[user.id].realStats?.barboDice?.wins || 0}</div>
+                                      <div>Total Bet: ${(userStats[user.id].realStats?.barboDice?.totalBets || 0).toFixed(2)}</div>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium">DiceBattle:</div>
+                                    <div className="ml-2">
+                                      <div>Games: {userStats[user.id].realStats?.diceBattle?.totalGames || 0}</div>
+                                      <div>Wins: {userStats[user.id].realStats?.diceBattle?.wins || 0}</div>
+                                      <div>Total Bet: ${(userStats[user.id].realStats?.diceBattle?.totalBets || 0).toFixed(2)}</div>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium">DiceRoulette:</div>
+                                      <div>Games: {userStats[user.id].realStats?.diceRoulette?.totalGames || 0}</div>
+                              {/* Wagering Progress */}
+                              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+                                <h4 className="font-bold text-orange-400 mb-2">🔄 Wagering</h4>
+                                <div className="text-xs space-y-2">
+                                  <div className="flex justify-between">
+                                    <span>Required:</span>
+                                    <span className="font-bold">${(userStats[user.id].wagering?.required || 0).toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Progress:</span>
+                                    <span className="font-bold">${(userStats[user.id].wagering?.progress || 0).toFixed(2)}</span>
+                                  </div>
+                                  <div className="w-full bg-gray-700 rounded-full h-2">
+                                    <div 
+                                      className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                                      style={{ width: `${userStats[user.id].wagering?.progressPercent || 0}%` }}
+                                    ></div>
+                                  </div>
+                                  <div className="text-center text-orange-400 font-bold">
+                                    {userStats[user.id].wagering?.progressPercent || 0}%
+                                  </div>
                                 </div>
                               </div>
                             </div>
 
-                            {/* Game Stats */}
-                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                              <h4 className="font-bold text-blue-400 mb-2">🎮 Game Stats (Real)</h4>
-                              <div className="text-xs space-y-1">
-                                <div>
-                                  <div className="font-medium">BarboDice:</div>
-                                  <div className="ml-2">
-                                    <div>Games: {userStats[user.id].realStats?.barboDice?.totalGames || 0}</div>
-                                    <div>Wins: {userStats[user.id].realStats?.barboDice?.wins || 0}</div>
-                                    <div>Total Bet: ${(userStats[user.id].realStats?.barboDice?.totalBets || 0).toFixed(2)}</div>
+                            {/* Affiliate Stats */}
+                            {userStats[user.id].affiliateStats && (
+                              <div className="mt-4 bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                                <h4 className="font-bold text-purple-400 mb-2">👥 Affiliate Stats</h4>
+                                <div className="grid grid-cols-3 gap-4 text-xs">
+                                  <div className="text-center">
+                                    <div className="font-bold text-lg">{userStats[user.id].affiliateStats.totalReferrals}</div>
+                                    <div className="text-gray-400">Total Referrals</div>
                                   </div>
-                                </div>
-                                <div>
-                                  <div className="font-medium">DiceBattle:</div>
-                                  <div className="ml-2">
-                                    <div>Games: {userStats[user.id].realStats?.diceBattle?.totalGames || 0}</div>
-                                    <div>Wins: {userStats[user.id].realStats?.diceBattle?.wins || 0}</div>
-                                    <div>Total Bet: ${(userStats[user.id].realStats?.diceBattle?.totalBets || 0).toFixed(2)}</div>
+                                  <div className="text-center">
+                                    <div className="font-bold text-lg">{userStats[user.id].affiliateStats.activeReferrals}</div>
+                                    <div className="text-gray-400">Active Referrals</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="font-bold text-lg text-green-400">${(userStats[user.id].affiliateStats.totalCommissionEarned || 0).toFixed(2)}</div>
+                                    <div className="text-gray-400">Commission Earned</div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
+                            )}
 
-                            {/* Wagering Progress */}
-                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
-                              <h4 className="font-bold text-orange-400 mb-2">🔄 Wagering</h4>
-                              <div className="text-xs space-y-2">
-                                <div className="flex justify-between">
-                                  <span>Required:</span>
-                                  <span className="font-bold">${(userStats[user.id].wagering?.required || 0).toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>Progress:</span>
-                                  <span className="font-bold">${(userStats[user.id].wagering?.progress || 0).toFixed(2)}</span>
-                                </div>
-                                <div className="w-full bg-gray-700 rounded-full h-2">
-                                  <div 
-                                    className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${userStats[user.id].wagering?.progressPercent || 0}%` }}
-                                  ></div>
-                                </div>
-                                <div className="text-center text-orange-400 font-bold">
-                                  {userStats[user.id].wagering?.progressPercent || 0}%
+                            {/* Recent Transactions */}
+                            {userStats[user.id].transactions && userStats[user.id].transactions.length > 0 && (
+                              <div className="mt-4 bg-gray-500/10 border border-gray-500/20 rounded-lg p-3">
+                                <h4 className="font-bold text-gray-400 mb-2">📋 Recent Transactions</h4>
+                                <div className="space-y-1 max-h-32 overflow-y-auto">
+                                  {userStats[user.id].transactions.map((tx: any, index: number) => (
+                                    <div key={index} className="flex justify-between items-center text-xs">
+                                      <span>{tx.type.replace('_', ' ')}</span>
+                                      <span className={tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                        ${Math.abs(tx.amount).toFixed(2)}
+                                      </span>
+                                      <span className="text-gray-500">
+                                        {new Date(tx.createdAt).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                            </div>
+                            )}
                           </div>
-
-                          {/* Affiliate Stats */}
-                          {userStats[user.id].affiliateStats && (
-                            <div className="mt-4 bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
-                              <h4 className="font-bold text-purple-400 mb-2">👥 Affiliate Stats</h4>
-                              <div className="grid grid-cols-3 gap-4 text-xs">
-                                <div className="text-center">
-                                  <div className="font-bold text-lg">{userStats[user.id].affiliateStats.totalReferrals}</div>
-                                  <div className="text-gray-400">Total Referrals</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="font-bold text-lg">{userStats[user.id].affiliateStats.activeReferrals}</div>
-                                  <div className="text-gray-400">Active Referrals</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="font-bold text-lg text-green-400">${(userStats[user.id].affiliateStats.totalCommissionEarned || 0).toFixed(2)}</div>
-                                  <div className="text-gray-400">Commission Earned</div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Recent Transactions */}
-                          {userStats[user.id].transactions && userStats[user.id].transactions.length > 0 && (
-                            <div className="mt-4 bg-gray-500/10 border border-gray-500/20 rounded-lg p-3">
-                              <h4 className="font-bold text-gray-400 mb-2">📋 Recent Transactions</h4>
-                              <div className="space-y-1 max-h-32 overflow-y-auto">
-                                {userStats[user.id].transactions.map((tx: any, index: number) => (
-                                  <div key={index} className="flex justify-between items-center text-xs">
-                                    <span>{tx.type.replace('_', ' ')}</span>
-                                    <span className={tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}>
-                                      ${Math.abs(tx.amount).toFixed(2)}
-                                    </span>
-                                    <span className="text-gray-500">
-                                      {new Date(tx.createdAt).toLocaleDateString()}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                         </div>
                       </td>
                     </tr>
