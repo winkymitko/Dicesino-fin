@@ -96,9 +96,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+      } else if (response.status === 401) {
+        // User is not authenticated, clear any existing user state
+        setUser(null);
       }
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      // Network error or other issues - don't log 401s as they're expected when not logged in
+      if (error instanceof Error && !error.message.includes('401')) {
+        console.error('Failed to refresh user:', error);
+      }
+      setUser(null);
     }
   };
 

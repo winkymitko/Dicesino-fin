@@ -7,7 +7,7 @@ export const authenticateToken = async (req, res, next) => {
   const token = req.cookies.token;
   
   if (!token) {
-    return res.status(401).json({ error: 'Access denied. No token provided.' });
+    return res.status(401).json({ error: 'No authentication token provided' });
   }
 
   try {
@@ -17,13 +17,15 @@ export const authenticateToken = async (req, res, next) => {
     });
     
     if (!user) {
-      return res.status(401).json({ error: 'Invalid token.' });
+      return res.status(401).json({ error: 'User not found' });
     }
     
     req.user = user;
     next();
   } catch (error) {
-    res.status(400).json({ error: 'Invalid token.' });
+    // Clear the invalid cookie
+    res.clearCookie('token');
+    res.status(401).json({ error: 'Invalid or expired token' });
   }
 };
 
