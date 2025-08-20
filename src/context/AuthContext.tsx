@@ -93,18 +93,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await fetch('/api/auth/me', {
         credentials: 'include'
       });
+      
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
       } else if (response.status === 401) {
-        // User is not authenticated, clear any existing user state
+        // User is not authenticated - this is normal, don't log as error
+        setUser(null);
+      } else {
+        // Other HTTP errors (500, etc.)
+        console.error('Failed to refresh user:', response.status, response.statusText);
         setUser(null);
       }
     } catch (error) {
-      // Network error or other issues - don't log 401s as they're expected when not logged in
-      if (error instanceof Error && !error.message.includes('401')) {
-        console.error('Failed to refresh user:', error);
-      }
+      // Network errors or other fetch issues
+      console.error('Network error refreshing user:', error);
       setUser(null);
     }
   };
