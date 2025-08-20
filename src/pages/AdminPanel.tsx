@@ -586,16 +586,7 @@ const AdminPanel: React.FC = () => {
                         <div className="flex items-center space-x-1">
                           <User className="h-4 w-4" />
                           <span>
-                            {report.user ? (
-                              <>
-                                {report.user.username || report.user.email}
-                                {report.user.email && report.user.username && (
-                                  <span className="text-gray-500"> ({report.user.email})</span>
-                                )}
-                              </>
-                            ) : (
-                              'Anonymous User'
-                            )}
+                            {report.user?.email || 'Anonymous User'}
                           </span>
                         </div>
                         <div className="flex items-center space-x-1">
