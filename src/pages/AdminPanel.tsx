@@ -540,7 +540,13 @@ const AdminPanel: React.FC = () => {
                                   </div>
                                   <div>
                                     <div className="font-medium">DiceRoulette:</div>
+                                    <div className="ml-2">
                                       <div>Games: {userStats[user.id].realStats?.diceRoulette?.totalGames || 0}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
                               {/* Wagering Progress */}
                               <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
                                 <h4 className="font-bold text-orange-400 mb-2">🔄 Wagering</h4>
@@ -611,10 +617,6 @@ const AdminPanel: React.FC = () => {
                       </tr>
                     )}
                   </React.Fragment>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 ))}
               </tbody>
             </table>
