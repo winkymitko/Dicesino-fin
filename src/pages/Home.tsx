@@ -1,775 +1,286 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Users, 
-  Settings, 
-  TrendingUp, 
-  DollarSign, 
-  Shield,
-  Edit,
-  Save,
-  X,
-  Plus,
-  Trash2,
-  Bug,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  User,
-  ChevronDown,
-  ChevronUp,
-  BarChart3
-} from 'lucide-react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Swords, Target, Play, Trophy, Star, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const AdminPanel: React.FC = () => {
+const Home: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [users, setUsers] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>({});
-  const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<any>({});
-  const [botNames, setBotNames] = useState<string[]>([]);
-  const [newBotName, setNewBotName] = useState('');
-  const [bugReports, setBugReports] = useState<any[]>([]);
-  const [bugFilters, setBugFilters] = useState({ status: '', priority: '' });
-  const [expandedUserStats, setExpandedUserStats] = useState<string | null>(null);
-  const [userStats, setUserStats] = useState<{[key: string]: any}>({});
-
-  useEffect(() => {
-    if (!user?.isAdmin) {
-      navigate('/');
-      return;
-    }
-    
-    fetchUsers();
-    fetchStats();
-    fetchBotNames();
-    fetchBugReports();
-  }, [user, navigate]);
-
-  const fetchUserStats = async (userId: string) => {
-    if (userStats[userId]) {
-      // Already fetched, just toggle
-      setExpandedUserStats(expandedUserStats === userId ? null : userId);
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/admin/users/${userId}/stats`, {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUserStats(prev => ({ ...prev, [userId]: data }));
-        setExpandedUserStats(userId);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user stats:', error);
-    }
-  };
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch('/api/admin/users', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data.users);
-      }
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const response = await fetch('/api/admin/stats', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    }
-  };
-
-  const fetchBotNames = async () => {
-    try {
-      const response = await fetch('/api/admin/bot-names', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setBotNames(data.botNames);
-      }
-    } catch (error) {
-      console.error('Failed to fetch bot names:', error);
-    }
-  };
-
-  const fetchBugReports = async () => {
-    try {
-      const response = await fetch('/api/admin/bug-reports', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setBugReports(data.bugReports || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch bug reports:', error);
-    }
-  };
-
-  const updateUserSettings = async (userId: string, settings: any) => {
-    try {
-      const response = await fetch(`/api/admin/users/${userId}/settings`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(settings)
-      });
-      
-      if (response.ok) {
-        fetchUsers();
-        setEditingUser(null);
-      }
-    } catch (error) {
-      console.error('Failed to update user settings:', error);
-    }
-  };
-
-  const updateCommissionRate = async (userId: string, commission: number) => {
-    try {
-      const response = await fetch(`/api/admin/users/${userId}/commission`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ commission })
-      });
-      
-      if (response.ok) {
-        fetchUsers();
-      }
-    } catch (error) {
-      console.error('Failed to update commission rate:', error);
-    }
-  };
-
-  const addBonus = async (userId: string, amount: number) => {
-    try {
-      const response = await fetch(`/api/admin/users/${userId}/bonus`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ amount })
-      });
-      
-      if (response.ok) {
-        fetchUsers();
-        alert('Bonus added successfully!');
-      }
-    } catch (error) {
-      console.error('Failed to add bonus:', error);
-    }
-  };
-
-  const addBotName = async () => {
-    if (!newBotName.trim()) return;
-
-    
-    try {
-      const response = await fetch('/api/admin/bot-names', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name: newBotName.trim() })
-      });
-      
-      if (response.ok) {
-        fetchBotNames();
-        setNewBotName('');
-      } else {
-        const error = await response.json();
-        alert(error.error);
-      }
-    } catch (error) {
-      console.error('Failed to add bot name:', error);
-    }
-  };
-
-  const removeBotName = async (name: string) => {
-    try {
-      const response = await fetch('/api/admin/bot-names', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name })
-      });
-      
-      if (response.ok) {
-        fetchBotNames();
-      } else {
-        const error = await response.json();
-        alert(error.error);
-      }
-    } catch (error) {
-      console.error('Failed to remove bot name:', error);
-    }
-  };
-
-  const updateBugReportStatus = async (reportId: string, status: string, priority?: string) => {
-    try {
-      const body: any = { status };
-      if (priority) body.priority = priority;
-      
-      const response = await fetch(`/api/admin/bug-reports/${reportId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(body)
-      });
-      
-      if (response.ok) {
-        fetchBugReports();
-      }
-    } catch (error) {
-      console.error('Failed to update bug report:', error);
-    }
-  };
-
-  const startEdit = (userId: string, currentValues: any) => {
-    setEditingUser(userId);
-    setEditValues(currentValues);
-  };
-
-  const saveEdit = () => {
-    if (editingUser) {
-      updateUserSettings(editingUser, editValues);
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingUser(null);
-    setEditValues({});
-  };
-
-  if (!user?.isAdmin) {
-    return <div>Access denied</div>;
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex items-center space-x-3 mb-8">
-          <Shield className="h-8 w-8 text-red-500" />
-          <h1 className="text-3xl font-bold">Admin Panel</h1>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex space-x-1 mb-8 bg-white/10 p-1 rounded-lg">
-          {[
-            { id: 'overview', label: 'Overview', icon: TrendingUp },
-            { id: 'users', label: 'Users', icon: Users },
-            { id: 'bots', label: 'Bot Names', icon: Settings },
-            { id: 'bugs', label: 'Bug Reports', icon: Bug }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
-                activeTab === tab.id
-                  ? 'bg-white/20 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <div className="flex items-center space-x-3 mb-2">
-                <Users className="h-6 w-6 text-blue-400" />
-                <h3 className="font-bold">Total Users</h3>
-              </div>
-              <div className="text-2xl font-bold">{stats.totalUsers || 0}</div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <div className="flex items-center space-x-3 mb-2">
-                <TrendingUp className="h-6 w-6 text-green-400" />
-                <h3 className="font-bold">Total Games</h3>
-              </div>
-              <div className="text-2xl font-bold">{stats.totalGames || 0}</div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <div className="flex items-center space-x-3 mb-2">
-                <DollarSign className="h-6 w-6 text-yellow-400" />
-                <h3 className="font-bold">Total Deposited</h3>
-              </div>
-              <div className="text-2xl font-bold">${(stats.totalRealMoneyDeposited || 0).toFixed(2)}</div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <div className="flex items-center space-x-3 mb-2">
-                <TrendingUp className="h-6 w-6 text-purple-400" />
-                <h3 className="font-bold">Casino Profit</h3>
-              </div>
-              <div className="text-2xl font-bold">${(stats.totalCasinoProfit || 0).toFixed(2)}</div>
-            </div>
-          </div>
-        )}
-
-        {/* Users Tab */}
-        {activeTab === 'users' && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-            <h2 className="text-2xl font-bold mb-6">User Management</h2>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/20">
-                    <th className="text-left p-3">User</th>
-                    <th className="text-left p-3">Balances</th>
-                    <th className="text-left p-3">House Edge</th>
-                    <th className="text-left p-3">Limits</th>
-                    <th className="text-left p-3">Affiliate</th>
-                    <th className="text-left p-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map(user => (
-                    <React.Fragment key={user.id}>
-                      <tr className="border-b border-white/10">
-                      <td className="p-3">
-                        <div>
-                          <div className="font-medium">{user.email}</div>
-                          <div className="text-gray-400 text-xs">@{user.username}</div>
-                          <div className="text-gray-500 text-xs">
-                            {new Date(user.createdAt).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="text-xs space-y-1">
-                          <div>💰 ${(user.cashBalance || 0).toFixed(2)}</div>
-                          <div>🎁 ${(user.bonusBalance || 0).toFixed(2)}</div>
-                          <div>🔒 ${(user.lockedBalance || 0).toFixed(2)}</div>
-                          <div>🎮 ${(user.virtualBalance || 0).toFixed(2)}</div>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        {editingUser === user.id ? (
-                          <div className="space-y-2">
-                            <input
-                              type="number"
-                              min="0"
-                              max="50"
-                              step="0.1"
-                              value={editValues.diceGameEdge || 0}
-                              onChange={(e) => setEditValues({...editValues, diceGameEdge: parseFloat(e.target.value)})}
-                              className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs"
-                            />
-                            <input
-                              type="number"
-                              min="0"
-                              max="50"
-                              step="0.1"
-                              value={editValues.diceBattleEdge || 0}
-                              onChange={(e) => setEditValues({...editValues, diceBattleEdge: parseFloat(e.target.value)})}
-                              className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs"
-                            />
-                          </div>
-                        ) : (
-                          <div className="text-xs space-y-1">
-                            <div>Dice: {user.diceGameEdge}%</div>
-                            <div>Battle: {user.diceBattleEdge}%</div>
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {editingUser === user.id ? (
-                          <div className="space-y-2">
-                            <input
-                              type="number"
-                              min="1"
-                              max="1000"
-                              value={editValues.maxBetWhileBonus || 0}
-                              onChange={(e) => setEditValues({...editValues, maxBetWhileBonus: parseFloat(e.target.value)})}
-                              className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs"
-                            />
-                            <input
-                              type="number"
-                              min="100"
-                              max="10000"
-                              value={editValues.maxBonusCashout || 0}
-                              onChange={(e) => setEditValues({...editValues, maxBonusCashout: parseFloat(e.target.value)})}
-                              className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs"
-                            />
-                          </div>
-                        ) : (
-                          <div className="text-xs space-y-1">
-                            <div>Max Bet: ${user.maxBetWhileBonus}</div>
-                            <div>Max Cashout: ${user.maxBonusCashout}</div>
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <div className="text-xs space-y-1">
-                          <div className={user.isAffiliate ? 'text-green-400' : 'text-gray-500'}>
-                            {user.isAffiliate ? 'Active' : 'Inactive'}
-                          </div>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                            value={user.affiliateCommission || 0}
-                            onChange={(e) => updateCommissionRate(user.id, parseFloat(e.target.value))}
-                            className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs"
-                          />
-                          <div className="text-gray-400">%</div>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex space-x-1">
-                          {editingUser === user.id ? (
-                            <>
-                              <button
-                                onClick={saveEdit}
-                                className="p-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded"
-                              >
-                                <Save className="h-3 w-3" />
-                              </button>
-                              <button
-                                onClick={cancelEdit}
-                                className="p-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => startEdit(user.id, {
-                                diceGameEdge: user.diceGameEdge,
-                                diceBattleEdge: user.diceBattleEdge,
-                                maxBetWhileBonus: user.maxBetWhileBonus,
-                                maxBonusCashout: user.maxBonusCashout
-                              })}
-                              className="p-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded"
-                            >
-                              <Edit className="h-3 w-3" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => {
-                              const amount = prompt('Enter bonus amount:');
-                              if (amount && parseFloat(amount) > 0) {
-                                addBonus(user.id, parseFloat(amount));
-                              }
-                            }}
-                            className="p-1 bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 rounded"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={() => fetchUserStats(user.id)}
-                            className="p-1 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded"
-                            title="View Statistics"
-                          >
-                            {expandedUserStats === user.id ? <ChevronUp className="h-3 w-3" /> : <BarChart3 className="h-3 w-3" />}
-                          </button>
-                        </div>
-                      </td>
-                      </tr>
-                      {expandedUserStats === user.id && userStats[user.id] && (
-                        <tr>
-                          <td colSpan={6} className="p-0">
-                            <div className="bg-black/20 border-t border-white/10 p-4">
-                              <div className="grid md:grid-cols-3 gap-4">
-                                {/* Real Money Stats */}
-                                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-                                  <h4 className="font-bold text-green-400 mb-2">💰 Real Money</h4>
-                                  <div className="text-xs space-y-1">
-                                    <div className="flex justify-between">
-                                      <span>Deposited:</span>
-                                      <span className="font-bold">${(userStats[user.id].realMoney?.totalDeposited || 0).toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Withdrawn:</span>
-                                      <span className="font-bold">${(userStats[user.id].realMoney?.totalWithdrawn || 0).toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Casino Profit:</span>
-                                      <span className={`font-bold ${(userStats[user.id].realMoney?.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                        ${(userStats[user.id].realMoney?.casinoProfit || 0).toFixed(2)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Game Stats */}
-                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                                  <h4 className="font-bold text-blue-400 mb-2">🎮 Game Stats (Real)</h4>
-                                  <div className="text-xs space-y-1">
-                                    <div>
-                                      <div className="font-medium">BarboDice:</div>
-                                      <div className="ml-2">
-                                        <div>Games: {userStats[user.id].realStats?.barboDice?.totalGames || 0}</div>
-                                        <div>Wins: {userStats[user.id].realStats?.barboDice?.wins || 0}</div>
-                                        <div>Total Bet: ${(userStats[user.id].realStats?.barboDice?.totalBets || 0).toFixed(2)}</div>
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <div className="font-medium">DiceBattle:</div>
-                                      <div className="ml-2">
-                                        <div>Games: {userStats[user.id].realStats?.diceBattle?.totalGames || 0}</div>
-                                        <div>Wins: {userStats[user.id].realStats?.diceBattle?.wins || 0}</div>
-                                        <div>Total Bet: ${(userStats[user.id].realStats?.diceBattle?.totalBets || 0).toFixed(2)}</div>
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <div className="font-medium">DiceRoulette:</div>
-                                      <div className="ml-2">
-                                        <div>Games: {userStats[user.id].realStats?.diceRoulette?.totalGames || 0}</div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Wagering Progress */}
-                                <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
-                                  <h4 className="font-bold text-orange-400 mb-2">🔄 Wagering</h4>
-                                  <div className="text-xs space-y-2">
-                                    <div className="flex justify-between">
-                                      <span>Required:</span>
-                                      <span className="font-bold">${(userStats[user.id].wagering?.required || 0).toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Progress:</span>
-                                      <span className="font-bold">${(userStats[user.id].wagering?.progress || 0).toFixed(2)}</span>
-                                    </div>
-                                    <div className="w-full bg-gray-700 rounded-full h-2">
-                                      <div 
-                                        className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                                        style={{ width: `${userStats[user.id].wagering?.progressPercent || 0}%` }}
-                                      ></div>
-                                    </div>
-                                    <div className="text-center text-orange-400 font-bold">
-                                      {userStats[user.id].wagering?.progressPercent || 0}%
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Affiliate Stats */}
-                              {userStats[user.id].affiliateStats && (
-                                <div className="mt-4 bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
-                                  <h4 className="font-bold text-purple-400 mb-2">👥 Affiliate Stats</h4>
-                                  <div className="grid grid-cols-3 gap-4 text-xs">
-                                    <div className="text-center">
-                                      <div className="font-bold text-lg">{userStats[user.id].affiliateStats.totalReferrals}</div>
-                                      <div className="text-gray-400">Total Referrals</div>
-                                    </div>
-                                    <div className="text-center">
-                                      <div className="font-bold text-lg">{userStats[user.id].affiliateStats.activeReferrals}</div>
-                                      <div className="text-gray-400">Active Referrals</div>
-                                    </div>
-                                    <div className="text-center">
-                                      <div className="font-bold text-lg text-green-400">${(userStats[user.id].affiliateStats.totalCommissionEarned || 0).toFixed(2)}</div>
-                                      <div className="text-gray-400">Commission Earned</div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Recent Transactions */}
-                              {userStats[user.id].transactions && userStats[user.id].transactions.length > 0 && (
-                                <div className="mt-4 bg-gray-500/10 border border-gray-500/20 rounded-lg p-3">
-                                  <h4 className="font-bold text-gray-400 mb-2">📋 Recent Transactions</h4>
-                                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                                    {userStats[user.id].transactions.map((tx: any, index: number) => (
-                                      <div key={index} className="flex justify-between items-center text-xs">
-                                        <span>{tx.type.replace('_', ' ')}</span>
-                                        <span className={tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}>
-                                          ${Math.abs(tx.amount).toFixed(2)}
-                                        </span>
-                                        <span className="text-gray-500">
-                                          {new Date(tx.createdAt).toLocaleDateString()}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Bot Names Tab */}
-        {activeTab === 'bots' && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-            <h2 className="text-2xl font-bold mb-6">DiceBattle Bot Names</h2>
-            
-            <div className="mb-6">
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 via-red-500/20 to-purple-600/20 blur-3xl"></div>
+        <div className="relative container mx-auto px-4 py-16 text-center">
+          <div className="relative inline-block mb-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-red-500 rounded-3xl blur-2xl opacity-60 animate-pulse"></div>
+            <div className="relative bg-gradient-to-r from-yellow-500 to-red-600 p-6 rounded-3xl">
               <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={newBotName}
-                  onChange={(e) => setNewBotName(e.target.value)}
-                  placeholder="Enter new bot name"
-                  className="flex-1 px-4 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-                  maxLength={20}
-                />
-                <button
-                  onClick={addBotName}
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-4 py-2 rounded-lg transition-all"
-                >
-                  Add Bot
-                </button>
+                <Dice1 className="h-12 w-12 text-white animate-bounce" style={{ animationDelay: '0ms' }} />
+                <Dice2 className="h-12 w-12 text-white animate-bounce" style={{ animationDelay: '200ms' }} />
+                <Dice3 className="h-12 w-12 text-white animate-bounce" style={{ animationDelay: '400ms' }} />
               </div>
-              <p className="text-xs text-gray-400 mt-2">
-                Bot names are used for DiceBattle opponents. Maximum 20 characters.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {botNames.map((name, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-black/30 rounded-lg">
-                  <span className="font-medium">{name}</span>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Remove bot name "${name}"?`)) {
-                        removeBotName(name);
-                      }
-                    }}
-                    className="p-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded transition-colors"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            
-            <div className="mt-4 text-sm text-gray-400">
-              Total bot names: {botNames.length} (Minimum 5 required)
             </div>
           </div>
-        )}
-
-        {/* Bug Reports Tab */}
-        {activeTab === 'bugs' && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Bug Reports</h2>
-              <button
-                onClick={fetchBugReports}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold px-4 py-2 rounded-lg transition-all"
-              >
-                Fetch Bug Reports
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {bugReports.length > 0 ? (
-                bugReports.map((report) => (
-                  <div key={report.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-bold text-lg">{report.subject}</h3>
-                          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            report.priority === 'critical' ? 'bg-red-500/20 text-red-400' :
-                            report.priority === 'high' ? 'bg-orange-500/20 text-orange-400' :
-                            report.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                            'bg-gray-500/20 text-gray-400'
-                          }`}>
-                            {report.priority}
-                          </div>
-                          <div className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            report.status === 'open' ? 'bg-blue-500/20 text-blue-400' :
-                            report.status === 'in_progress' ? 'bg-yellow-500/20 text-yellow-400' :
-                            report.status === 'resolved' ? 'bg-green-500/20 text-green-400' :
-                            'bg-gray-500/20 text-gray-400'
-                          }`}>
-                            {report.status.replace('_', ' ')}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-4 text-sm text-gray-400 mb-3">
-                          <div className="flex items-center space-x-1">
-                            <User className="h-4 w-4" />
-                            <span>
-                              {report.email || 'Anonymous User'}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Clock className="h-4 w-4" />
-                            <span>{new Date(report.createdAt).toLocaleString()}</span>
-                          </div>
-                        </div>
-                        
-                        <p className="text-gray-300 mb-4">{report.message}</p>
-                      </div>
+          
+          <h1 className="text-6xl md:text-8xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-yellow-400 via-red-500 to-purple-600 bg-clip-text text-transparent animate-pulse">
+              DiceSino
+            </span>
+          </h1>
+          
+          <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+            Experience the thrill of premium dice gaming with 
+            <span className="bg-gradient-to-r from-yellow-400 to-red-500 bg-clip-text text-transparent font-bold"> real money rewards</span>
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            {!user ? (
+              <>
+                <Link
+                  to="/register"
+                  className="relative group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform group-hover:scale-105 shadow-2xl">
+                    🚀 Start Playing Now
+                  </div>
+                </Link>
+                <Link
+                  to="/login"
+                  className="relative group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 hover:border-blue-400/50 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform group-hover:scale-105 backdrop-blur-sm">
+                    🔑 Login
+                  </div>
+                </Link>
+              </>
+            ) : (
+              <div className="text-center">
+                <p className="text-xl text-gray-300 mb-4">Welcome back, {user.name || user.email}!</p>
+                <div className="flex space-x-4">
+                  <Link
+                    to="/dice"
+                    className="relative group"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform group-hover:scale-105 shadow-2xl">
+                      🎲 Play BarboDice
                     </div>
-                    
-                    <div className="flex space-x-2">
-                      <select
-                        value={report.status}
-                        onChange={(e) => updateBugReportStatus(report.id, e.target.value, report.priority)}
-                        className="px-3 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                      >
-                        <option value="open">Open</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="resolved">Resolved</option>
-                        <option value="closed">Closed</option>
-                      </select>
-                      
-                      <select
-                        value={report.priority}
-                        onChange={(e) => updateBugReportStatus(report.id, report.status, e.target.value)}
-                        className="px-3 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="critical">Critical</option>
-                      </select>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Games Section */}
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              Premium Casino Games
+            </span>
+          </h2>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            Choose from our collection of provably fair dice games with real money prizes
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* BarboDice */}
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+            <div className="relative bg-gradient-to-br from-yellow-500/10 to-orange-500/10 backdrop-blur-sm border border-yellow-500/30 rounded-3xl p-8 hover:transform hover:scale-105 transition-all duration-300">
+              <div className="text-center mb-6">
+                <div className="relative inline-block mb-4">
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl blur-lg opacity-75"></div>
+                  <div className="relative bg-gradient-to-r from-yellow-500 to-orange-600 p-4 rounded-2xl">
+                    <div className="flex space-x-1">
+                      <Dice1 className="h-8 w-8 text-white" />
+                      <Dice2 className="h-8 w-8 text-white" />
+                      <Dice3 className="h-8 w-8 text-white" />
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-400 py-8">
-                  <Bug className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No bug reports found</p>
-                  <p className="text-sm">Reports will appear here when users submit them</p>
                 </div>
-              )}
+                <h3 className="text-2xl font-bold text-yellow-400 mb-2">BarboDice</h3>
+                <p className="text-gray-300 mb-4">Roll for singles, straights, and triples. Cash out anytime or risk it all!</p>
+                <div className="flex justify-center space-x-4 text-sm mb-6">
+                  <div className="text-center">
+                    <div className="text-green-400 font-bold">Up to 2.2×</div>
+                    <div className="text-gray-500">Multiplier</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-blue-400 font-bold">Provably</div>
+                    <div className="text-gray-500">Fair</div>
+                  </div>
+                </div>
+              </div>
+              <Link
+                to="/dice"
+                className="block w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-white font-bold py-3 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-yellow-500/25"
+              >
+                🎲 Play Now
+              </Link>
             </div>
           </div>
-        )}
+
+          {/* DiceBattle */}
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500/30 to-pink-500/30 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+            <div className="relative bg-gradient-to-br from-red-500/10 to-pink-500/10 backdrop-blur-sm border border-red-500/30 rounded-3xl p-8 hover:transform hover:scale-105 transition-all duration-300">
+              <div className="text-center mb-6">
+                <div className="relative inline-block mb-4">
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-pink-500 rounded-2xl blur-lg opacity-75"></div>
+                  <div className="relative bg-gradient-to-r from-red-500 to-pink-600 p-4 rounded-2xl">
+                    <Swords className="h-12 w-12 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-red-400 mb-2">DiceBattle</h3>
+                <p className="text-gray-300 mb-4">Challenge opponents in prediction battles. Closest guess wins the pot!</p>
+                <div className="flex justify-center space-x-4 text-sm mb-6">
+                  <div className="text-center">
+                    <div className="text-green-400 font-bold">1.9× Payout</div>
+                    <div className="text-gray-500">Winner Takes All</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-purple-400 font-bold">PvP</div>
+                    <div className="text-gray-500">Battles</div>
+                  </div>
+                </div>
+              </div>
+              <Link
+                to="/dicebattle"
+                className="block w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-400 hover:to-pink-400 text-white font-bold py-3 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-red-500/25"
+              >
+                ⚔️ Battle Now
+              </Link>
+            </div>
+          </div>
+
+          {/* DiceRoulette */}
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/30 to-blue-500/30 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+            <div className="relative bg-gradient-to-br from-purple-500/10 to-blue-500/10 backdrop-blur-sm border border-purple-500/30 rounded-3xl p-8 hover:transform hover:scale-105 transition-all duration-300">
+              <div className="text-center mb-6">
+                <div className="relative inline-block mb-4">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-500 rounded-2xl blur-lg opacity-75"></div>
+                  <div className="relative bg-gradient-to-r from-purple-500 to-blue-600 p-4 rounded-2xl">
+                    <Target className="h-12 w-12 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-purple-400 mb-2">DiceRoulette</h3>
+                <p className="text-gray-300 mb-4">Bet on numbers, odds/evens, and ranges. Multiple ways to win!</p>
+                <div className="flex justify-center space-x-4 text-sm mb-6">
+                  <div className="text-center">
+                    <div className="text-green-400 font-bold">Multiple</div>
+                    <div className="text-gray-500">Bet Types</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-yellow-400 font-bold">High</div>
+                    <div className="text-gray-500">Payouts</div>
+                  </div>
+                </div>
+              </div>
+              <Link
+                to="/diceroulette"
+                className="block w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-400 hover:to-blue-400 text-white font-bold py-3 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-purple-500/25"
+              >
+                🎯 Play Roulette
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Features Section */}
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold mb-4">
+            <span className="bg-gradient-to-r from-green-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+              Why Choose DiceSino?
+            </span>
+          </h2>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            {
+              icon: Trophy,
+              title: 'Provably Fair',
+              description: 'Transparent and verifiable game outcomes',
+              gradient: 'from-yellow-500 to-orange-500',
+              bgGradient: 'from-yellow-500/10 to-orange-500/10'
+            },
+            {
+              icon: Zap,
+              title: 'Instant Payouts',
+              description: 'Fast crypto withdrawals and deposits',
+              gradient: 'from-green-500 to-emerald-500',
+              bgGradient: 'from-green-500/10 to-emerald-500/10'
+            },
+            {
+              icon: Star,
+              title: 'Premium Experience',
+              description: 'High-quality graphics and smooth gameplay',
+              gradient: 'from-purple-500 to-pink-500',
+              bgGradient: 'from-purple-500/10 to-pink-500/10'
+            },
+            {
+              icon: Play,
+              title: 'Multiple Games',
+              description: 'Various dice games for every player',
+              gradient: 'from-blue-500 to-cyan-500',
+              bgGradient: 'from-blue-500/10 to-cyan-500/10'
+            }
+          ].map((feature, index) => (
+            <div key={index} className="relative group">
+              <div className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} rounded-2xl blur-lg opacity-20 group-hover:opacity-30 transition-opacity duration-300`}></div>
+              <div className={`relative bg-gradient-to-br ${feature.bgGradient} backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:transform hover:scale-105 transition-all duration-300`}>
+                <div className={`inline-flex p-3 bg-gradient-to-r ${feature.gradient} rounded-xl mb-4`}>
+                  <feature.icon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">{feature.title}</h3>
+                <p className="text-gray-400 text-sm">{feature.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      {!user && (
+        <div className="container mx-auto px-4 py-16">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-red-500/20 to-purple-600/20 rounded-3xl blur-2xl"></div>
+            <div className="relative bg-gradient-to-br from-gray-800/90 via-gray-900/90 to-gray-800/90 backdrop-blur-sm border border-yellow-500/30 rounded-3xl p-12 text-center">
+              <h2 className="text-4xl font-bold mb-4">
+                <span className="bg-gradient-to-r from-yellow-400 to-red-500 bg-clip-text text-transparent">
+                  Ready to Win Big?
+                </span>
+              </h2>
+              <p className="text-xl text-gray-300 mb-8">
+                Join thousands of players and start your winning journey today!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  to="/register"
+                  className="relative group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform group-hover:scale-105 shadow-2xl">
+                    🎁 Get $1000 Free + $50 Bonus
+                  </div>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default AdminPanel;
+export default Home;
