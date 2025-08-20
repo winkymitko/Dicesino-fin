@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String?  // Auto-generated from email
+  password          String
+  name              String?
+  phone             String?
+  
+  // New wallet system
+  cashBalance       Float    @default(0)     // Withdrawable money
+  bonusBalance      Float    @default(0)     // Play-only bonus money
+  lockedBalance     Float    @default(0)     // Bonus winnings pending wagering
+  virtualBalance    Float    @default(1000)  // Demo money (separate)
+  
+  // Wagering requirements
+  activeWageringRequirement Float @default(0)  // Total amount needed to wager
+  currentWageringProgress   Float @default(0)  // Amount already wagered
+  wageringMultiplier        Float @default(20) // Keep existing column
+  
+  isAdmin           Boolean  @default(false)
+  currentWinStreak  Int      @default(0)
+  
+  // Enhanced edge control per game
+  diceGameEdge      Float    @default(5.0)   // House edge % for dice game
+  diceBattleEdge    Float    @default(5.0)   // House edge % for dice battle
+  diceRouletteEdge  Float    @default(5.0)   // House edge % for dice roulette
+  
+  // Risk controls
+  maxBetWhileBonus  Float    @default(50)    // Max bet when bonus active
+  maxBonusCashout   Float    @default(1000)  // Max cashout from bonus flow
+  
+  // Affiliate system
+  isAffiliate       Boolean  @default(false)
+  affiliateCode     String?  @unique         // Unique affiliate code
+  affiliateCommission Float  @default(0)     // Commission percentage (0-100)
+  referredBy        String?                  // Affiliate code (not ID) that referred this user
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  games           Game[]
+  gameRounds      GameRound[]
+  bonuses         Bonus[]
+  transactions    Transaction[]
+  cryptoWallets   CryptoWallet?
+  cryptoDeposits  CryptoDeposit[]
+  cryptoWithdrawals CryptoWithdrawal[]
+  affiliatePayoutPeriods AffiliatePayoutPeriod[]
+  affiliateStats  AffiliateStats?
+  bugReports      BugReport[]
+
+  @@map("users")
+}
+
+model Game {
+  id        String   @id @default(cuid())
+  userId    String
+  gameType  String   // "dice", "dicebattle", etc
+  stake     Float
+  totalPot  Float
+  finalPot  Float?
+  status    String   // "active", "cashed_out", "lost", "tie"
+  
+  // Bonus tracking
+  betSource String   @default("cash") // "cash", "bonus", "mixed"
+  bonusUsed Float    @default(0)      // Amount of bonus used in this game
+  cashUsed  Float    @default(0)      // Amount of cash used in this game
+  
+  metadata  String?  // JSON string for game-specific data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User        @relation(fields: [userId], references: [id])
+  rounds GameRound[]
+
+  @@map("games")
+}
+
+model GameRound {
+  id          String   @id @default(cuid())
+  gameId      String
+  userId      String
+  roundNumber Int
+  dice1       Int
+  dice2       Int
+  dice3       Int
+  points      Int
+  multiplier  Float
+  potBefore   Float
+  potAfter    Float
+  serverSeed  String   // For provably fair
+  clientSeed  String   // For provably fair
+  nonce       Int      // For provably fair
+  
+  // Wagering tracking
+  wageringContribution Float @default(0) // How much this round contributed to wagering
+  
+  metadata    String?  // JSON string for round-specific data
+  createdAt   DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("game_rounds")
+}
+
+model Bonus {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Float
+  type        String   // "signup", "deposit", "admin_bonus", etc
+  description String?
+  
+  // Wagering requirements
+  wageringRequired    Float    @default(0)  // Total wagering needed
+  wageringMultiplier  Float    @default(20) // WR multiplier used
+  wageringCompleted   Boolean  @default(false) // Keep existing column
+  
+  status      String   @default("active") // "active", "completed", "expired", "voided"
+  expiresAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("bonuses")
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // "deposit", "withdrawal", "bet", "win", "bonus_grant", "bonus_conversion", etc
+  amount      Float
+  
+  // Balance changes
+  cashChange    Float @default(0)
+  bonusChange   Float @default(0)
+  lockedChange  Float @default(0)
+  virtualChange Float @default(0)
+  
+  // Balances after transaction
+  cashBalanceAfter    Float
+  bonusBalanceAfter   Float
+  lockedBalanceAfter  Float
+  virtualBalanceAfter Float
+  
+  description String?
+  reference   String?  // Game ID, deposit ID, etc
+  metadata    String?  // JSON for additional data
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("transactions")
+}
+
+model CryptoWallet {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  address    String   @unique
+  privateKey String   // In production, encrypt this!
+  currency   String   @default("USDT")
+  network    String   @default("TRC20")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id])
+  deposits CryptoDeposit[]
+
+  @@map("crypto_wallets")
+}
+
+model CryptoDeposit {
+  id            String   @id @default(cuid())
+  userId        String
+  walletId      String
+  amount        Float
+  currency      String   @default("USDT")
+  txHash        String   @unique
+  status        String   @default("pending") // pending, confirmed, failed
+  confirmations Int      @default(0)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user   User         @relation(fields: [userId], references: [id])
+  wallet CryptoWallet @relation(fields: [walletId], references: [id])
+
+  @@map("crypto_deposits")
+}
+
+model CryptoWithdrawal {
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Float
+  currency      String   @default("USDT")
+  toAddress     String
+  txHash        String?  @unique
+  status        String   @default("pending") // pending, processing, completed, failed
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user   User @relation(fields: [userId], references: [id])
+
+  @@map("crypto_withdrawals")
+}
+
+model AffiliatePayoutPeriod {
+  id            String   @id @default(cuid())
+  affiliateId   String
+  periodStart   DateTime
+  periodEnd     DateTime
+  totalProfit   Float    @default(0)    // Total casino profit from all referrals in this period
+  commission    Float    @default(0)    // Commission earned (totalProfit * rate)
+  status        String   @default("ongoing") // "ongoing", "pending", "finished"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  affiliate     User     @relation(fields: [affiliateId], references: [id])
+  
+  @@map("affiliate_payout_periods")
+}
+
+model AffiliateStats {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  payoutWallet  String?
+  payoutPeriod  String   @default("Monthly")
+  payoutRequested Boolean @default(false)
+  pendingCommission Float @default(0)
+  requestedPayout Float @default(0)
+  totalCommission Float @default(0)
+  totalReferrals Int @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  user          User     @relation(fields: [userId], references: [id])
+  
+  @@map("affiliate_stats")
+}
+
+model BugReport {
+  id          String   @id @default(cuid())
+  userId      String?  // Optional - can be anonymous
+  email       String?  // For contact
+  subject     String
+  message     String
+  status      String   @default("open") // "open", "in_progress", "resolved", "closed"
+  priority    String   @default("medium") // "low", "medium", "high", "critical"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User?    @relation(fields: [userId], references: [id])
+  
+  @@map("bug_reports")
+}
