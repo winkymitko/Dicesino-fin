@@ -88,16 +88,12 @@ const AdminPanel: React.FC = () => {
 
   const fetchBugReports = async () => {
     try {
-      const params = new URLSearchParams();
-      if (bugFilters.status) params.append('status', bugFilters.status);
-      if (bugFilters.priority) params.append('priority', bugFilters.priority);
-      
-      const response = await fetch(`/api/admin/bug-reports?${params}`, {
+      const response = await fetch('/api/admin/bug-reports', {
         credentials: 'include'
       });
       if (response.ok) {
         const data = await response.json();
-        setBugReports(data.bugReports);
+        setBugReports(data.bug_reports || []);
       }
     } catch (error) {
       console.error('Failed to fetch bug reports:', error);
@@ -524,36 +520,12 @@ const AdminPanel: React.FC = () => {
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold">Bug Reports</h2>
-            <div className="flex space-x-3">
-              <select
-                value={bugFilters.status}
-                onChange={(e) => {
-                  setBugFilters({...bugFilters, status: e.target.value});
-                  fetchBugReports();
-                }}
-                className="px-3 py-2 bg-black/30 border border-white/20 rounded-lg text-sm"
-              >
-                <option value="">All Status</option>
-                <option value="open">Open</option>
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-              </select>
-              <select
-                value={bugFilters.priority}
-                onChange={(e) => {
-                  setBugFilters({...bugFilters, priority: e.target.value});
-                  fetchBugReports();
-                }}
-                className="px-3 py-2 bg-black/30 border border-white/20 rounded-lg text-sm"
-              >
-                <option value="">All Priority</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
-            </div>
+            <button
+              onClick={fetchBugReports}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold px-4 py-2 rounded-lg transition-all"
+            >
+              Fetch Bug Reports
+            </button>
           </div>
 
           <div className="space-y-4">
@@ -586,23 +558,23 @@ const AdminPanel: React.FC = () => {
                         <div className="flex items-center space-x-1">
                           <User className="h-4 w-4" />
                           <span>
-                            {report.user?.email || 'Anonymous User'}
+                            {report.user_email || 'Anonymous User'}
                           </span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Clock className="h-4 w-4" />
-                          <span>{new Date(report.createdAt).toLocaleString()}</span>
+                          <span>{new Date(report.created_at).toLocaleString()}</span>
                         </div>
                       </div>
                       
-                      <p className="text-gray-300 mb-4">{report.message}</p>
+                      <p className="text-gray-300 mb-4">{report.description}</p>
                     </div>
                   </div>
                   
                   <div className="flex space-x-2">
                     <select
                       value={report.status}
-                      onChange={(e) => updateBugReportStatus(report.id, e.target.value)}
+                      onChange={(e) => updateBugReportStatus(report.id, e.target.value, report.priority)}
                       className="px-3 py-1 bg-black/30 border border-white/20 rounded text-sm"
                     >
                       <option value="open">Open</option>

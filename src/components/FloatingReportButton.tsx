@@ -26,7 +26,7 @@ const FloatingReportButton: React.FC = () => {
         credentials: 'include',
         body: JSON.stringify({
           subject: subject.trim(),
-          message: message.trim(),
+          description: message.trim(),
         })
       });
 

@@ -34,22 +34,23 @@ let botNames = [...DEFAULT_BOT_NAMES];
 // Submit bug report
 router.post('/bug-reports', async (req, res) => {
   try {
-    const { subject, message } = req.body;
+    const { subject, description } = req.body;
     
-    if (!subject || !message) {
-      return res.status(400).json({ error: 'Subject and message are required' });
+    if (!subject || !description) {
+      return res.status(400).json({ error: 'Subject and description are required' });
     }
     
     const bugReport = await prisma.bugReport.create({
       data: {
-        userId: req.user?.id || null,
+        user_id: req.user?.id || null,
+        user_email: req.user?.email || null,
         subject: subject.trim(),
-        message: message.trim(),
+        description: description.trim(),
         priority: 'medium' // Default priority set by system
       }
     });
     
-    res.json({ success: true, reportId: bugReport.id });
+    res.json({ success: true, report_id: bugReport.id });
   } catch (error) {
     console.error('Bug report submission error:', error);
     res.status(500).json({ error: 'Failed to submit bug report' });
@@ -59,47 +60,29 @@ router.post('/bug-reports', async (req, res) => {
 // Get bug reports (admin only)
 router.get('/bug-reports', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { status, priority } = req.query;
-    
-    const where = {};
-    if (status) where.status = status;
-    if (priority) where.priority = priority;
-    
     const bugReports = await prisma.bugReport.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            email: true,
-            username: true
-          }
-        }
-      },
-      orderBy: [
-        { priority: 'desc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: { created_at: 'desc' }
     });
     
-    res.json({ bugReports });
+    res.json({ bug_reports: bugReports });
   } catch (error) {
     console.error('Failed to fetch bug reports:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Update bug report status (admin only)
-router.put('/bug-reports/:reportId', authenticateToken, requireAdmin, async (req, res) => {
+// Update bug report (admin only)
+router.put('/bug-reports/:report_id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { reportId } = req.params;
+    const { report_id } = req.params;
     const { status, priority } = req.body;
     
-    const updateData = {};
+    const updateData = { updated_at: new Date() };
     if (status) updateData.status = status;
     if (priority) updateData.priority = priority;
     
     await prisma.bugReport.update({
-      where: { id: reportId },
+      where: { id: report_id },
       data: updateData
     });
     
